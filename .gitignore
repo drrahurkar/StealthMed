@@ -3,4 +3,9 @@
 pv_metrics_by_age_groups_drugname1.txt
 pedpubs.csv
 prr_matched_with_cui_atc.csv
+faers_cleandrug.dta
+faers_ade_by_drug_age.csv
+faers_prr_082025.dta
+faers_prrs.txt
+smr_faers.dta
 !README.md
