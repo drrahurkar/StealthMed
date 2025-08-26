@@ -15,7 +15,7 @@ st.set_page_config(page_title="Stealth Med RWEye", page_icon="💊", layout="wid
 # Branding (logo only in main content, left-aligned)
 # -----------------------
 # Defaults to your new path but still works if logo.svg sits next to app.py
-DEFAULT_DIR = Path("/Users/rahurkar.1/Library/CloudStorage/OneDrive-TheOhioStateUniversityWexnerMedicalCenter/FAERS/drug_id_platform/poc")
+DEFAULT_DIR = Path(__file__).parent
 LOGO_PATH = Path(os.getenv("LOGO_SVG", DEFAULT_DIR / "logo.svg"))
 if not LOGO_PATH.exists():
     # fallback to local folder if env/default missing
