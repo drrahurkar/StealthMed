@@ -1,11 +1,35 @@
+# === data & big binaries ===
+*.dta
+*.sav
+*.sas7bdat
+*.rds
+*.feather
+*.parquet
+*.db
+*.sqlite
+*.zip
+*.gz
+*.xz
+*.bz2
 
-# Large data
-pv_metrics_by_age_groups_drugname1.txt
-pedpubs.csv
-prr_matched_with_cui_atc.csv
+# large CSVs / temp dirs in this repo
+temp/**
+largefiles/**
+poc/largefiles/**
+poc/*.csv
+
+# project-specific big files seen in errors
 faers_cleandrug.dta
 faers_ade_by_drug_age.csv
 faers_prr_082025.dta
 faers_prrs.txt
 smr_faers.dta
+faers_082025key.dta
+temp/faers_lower(drug).dta
+smr_faers2.dta
+poc/largefiles/prr3.dta
+poc/prr.csv
+poc/prr3.csv
+
+# keep readme
 !README.md
