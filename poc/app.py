@@ -11,18 +11,19 @@ from datetime import datetime
 # -----------------------
 st.set_page_config(page_title="Stealth Med RWEye", page_icon="💊", layout="wide")
 # --- Logo as SVG, scaled to 33% of page width ---
-LOGO_PATH = Path(__file__).parent / "logo.svg"
+from pathlib import Path
+import streamlit as st
+
+DEFAULT_DIR = Path(__file__).parent
+LOGO_PATH = DEFAULT_DIR / "logo.svg"
 
 def render_header_logo():
     if LOGO_PATH.exists():
-        svg_str = LOGO_PATH.read_text()
-        st.markdown(
-            f"""
-            <div style="display:flex; justify-content:flex-end; padding:10px 0;">
-                <div style="width:33%;">{svg_str}</div>
-            </div>
-            """,
-            unsafe_allow_html=True
+        svg_content = LOGO_PATH.read_text()
+        # scale to ~33% of screen width
+        st.components.v1.html(
+            f"<div style='width:33%; margin:auto;'>{svg_content}</div>",
+            height=200,  # adjust if clipped
         )
 
 # -----------------------
@@ -52,22 +53,7 @@ def resolve_any(paths: list[Path | None]) -> Path | None:
             return Path(p)
     return None
 
-# -----------------------
-# Branding (logo)
-# -----------------------
-LOGO_PATH = resolve_any([
-    REPO_DIR / "logo.svg",
-    REPO_DIR / "logo.png",
-    DATA_DIR / "logo.svg",
-    DATA_DIR / "logo.png",
-    Path(os.getenv("LOGO_SVG")) if os.getenv("LOGO_SVG") else None,
-])
 
-def render_header_logo():
-    if LOGO_PATH and LOGO_PATH.exists():
-        left, right = st.columns([1, 7])
-        with left:
-            st.image(str(LOGO_PATH), use_column_width=True)
 
 # -----------------------
 # Data file targets (put these files in repo root or data/)
