@@ -1,4 +1,4 @@
-# app.py — smr3/prr3 schema, is_first filter, dropdown ADE, CSV downloads
+# app.py — cloud-safe header: paths, logo, loaders, file resolution
 import os
 from pathlib import Path
 import numpy as np
@@ -10,31 +10,70 @@ from datetime import datetime
 # Page config
 # -----------------------
 st.set_page_config(page_title="Stealth Med RWEye", page_icon="💊", layout="wide")
-
-# -----------------------
-# Branding (logo only in main content, left-aligned)
-# -----------------------
-# Defaults to your new path but still works if logo.svg sits next to app.py
-DEFAULT_DIR = Path(__file__).parent
-LOGO_PATH = Path(os.getenv("LOGO_SVG", DEFAULT_DIR / "logo.svg"))
-if not LOGO_PATH.exists():
-    # fallback to local folder if env/default missing
-    LOGO_PATH = Path(__file__).parent / "logo.svg"
+# --- Logo as SVG, scaled to 33% of page width ---
+LOGO_PATH = Path(__file__).parent / "logo.svg"
 
 def render_header_logo():
     if LOGO_PATH.exists():
-        left, right = st.columns([1, 7])   # tweak the ratio if you want
-        with left:
-            try:
-                st.image(str(LOGO_PATH), width=600)  # size tweak here (e.g., 120–160)
-            except TypeError:
-                st.image(str(LOGO_PATH), width=600)
+        svg_str = LOGO_PATH.read_text()
+        st.markdown(
+            f"""
+            <div style="display:flex; justify-content:flex-end; padding:10px 0;">
+                <div style="width:33%;">{svg_str}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 # -----------------------
-# Paths (override with env if you want)
+# Repo-relative paths (no absolute paths)
 # -----------------------
-SMR_PATH = Path(os.getenv("SMR3_CSV", DEFAULT_DIR / "smr3.csv"))
-PRR_PATH = Path(os.getenv("PRR3_CSV", DEFAULT_DIR / "prr3.csv"))
+REPO_DIR = Path(__file__).parent
+DATA_DIR = REPO_DIR / "data"  # optional subfolder; place csvs here or next to app.py
+
+def resolve_file(basename: str, envvar: str) -> Path | None:
+    """Find a file in data/, then repo root, then ENV var if it exists."""
+    p1 = DATA_DIR / basename
+    if p1.exists():
+        return p1
+    p2 = REPO_DIR / basename
+    if p2.exists():
+        return p2
+    p3_str = os.getenv(envvar)
+    if p3_str:
+        p3 = Path(p3_str)
+        if p3.exists():
+            return p3
+    return None
+
+def resolve_any(paths: list[Path | None]) -> Path | None:
+    for p in paths:
+        if p and Path(p).exists():
+            return Path(p)
+    return None
+
+# -----------------------
+# Branding (logo)
+# -----------------------
+LOGO_PATH = resolve_any([
+    REPO_DIR / "logo.svg",
+    REPO_DIR / "logo.png",
+    DATA_DIR / "logo.svg",
+    DATA_DIR / "logo.png",
+    Path(os.getenv("LOGO_SVG")) if os.getenv("LOGO_SVG") else None,
+])
+
+def render_header_logo():
+    if LOGO_PATH and LOGO_PATH.exists():
+        left, right = st.columns([1, 7])
+        with left:
+            st.image(str(LOGO_PATH), use_column_width=True)
+
+# -----------------------
+# Data file targets (put these files in repo root or data/)
+# -----------------------
+SMR_PATH = resolve_file("smr3.csv", "SMR3_CSV")
+PRR_PATH = resolve_file("prr3.csv", "PRR3_CSV")
 
 # -----------------------
 # Loaders
@@ -44,21 +83,17 @@ def load_smr(pathlike) -> pd.DataFrame:
     df = pd.read_csv(pathlike, dtype=str)
     df.columns = [c.strip().lower() for c in df.columns]
 
-    # normalize strings
     for c in ["drug", "agegroup", "l1", "l2", "l3", "l4", "cui"]:
         if c in df.columns:
             df[c] = df[c].astype(str).str.strip()
 
-    # numeric
     for c in ["prescriptions", "pubs", "is_first"]:
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce")
 
-    # enforce your rule: only keep rows where is_first == 1
     if "is_first" in df.columns:
         df = df[df["is_first"] == 1]
 
-    # treat empty strings as NA for ATC
     for c in ["l1", "l2", "l3", "l4"]:
         if c in df.columns:
             df[c] = df[c].replace({"": np.nan, "nan": np.nan})
@@ -69,30 +104,34 @@ def load_smr(pathlike) -> pd.DataFrame:
 def load_prr(pathlike) -> pd.DataFrame:
     df = pd.read_csv(pathlike, dtype=str)
     df.columns = [c.strip().lower() for c in df.columns]
-    # normalize strings
     for c in ["drug", "cui", "agegroup", "pt"]:
         if c in df.columns:
             df[c] = df[c].astype(str).str.strip()
-    # numeric
     for c in ["prr", "ror", "ic", "ebgm"]:
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce")
     return df
 
-def load_or_upload(label: str, default_path: Path, fn):
-    try:
-        return fn(default_path), str(default_path)
-    except Exception as e:
-        st.warning(f"Could not open **{label}** at `{default_path}`. Upload below. Error: {e}")
-        up = st.file_uploader(f"Upload {label}", type=["csv"], key=f"up_{label}")
-        if up is not None:
-            return fn(up), f"(uploaded) {label}"
-        return pd.DataFrame(), f"(missing) {label}"
+def load_or_upload(label: str, path_obj: Path | None, fn):
+    if path_obj is not None:
+        try:
+            return fn(path_obj), str(path_obj)
+        except Exception as e:
+            st.warning(f"Could not open **{label}** at `{path_obj}`. Upload below. Error: {e}")
+    else:
+        st.warning(f"Could not find **{label}** in repo (checked data/ and repo root). Upload below.")
 
+    up = st.file_uploader(f"Upload {label}", type=["csv"], key=f"up_{label}")
+    if up is not None:
+        return fn(up), f"(uploaded) {label}"
+    return pd.DataFrame(), f"(missing) {label}"
+
+# ---- actually load the data (or prompt for upload)
 smr, smr_src = load_or_upload("smr3.csv", SMR_PATH, load_smr)
 prr, prr_src = load_or_upload("prr3.csv", PRR_PATH, load_prr)
 if smr.empty or prr.empty:
     st.stop()
+
 
 # -----------------------
 # Sidebar (filters)
