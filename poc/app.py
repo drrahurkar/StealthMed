@@ -22,7 +22,7 @@ def render_header_logo():
         svg_content = LOGO_PATH.read_text()
         # scale to ~33% of screen width
         st.components.v1.html(
-            f"<div style='width:33%; margin:auto;'>{svg_content}</div>",
+            f"<div style='width:33%; margin:left;'>{svg_content}</div>",
             height=200,  # adjust if clipped
         )
 
