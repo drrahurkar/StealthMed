@@ -171,11 +171,12 @@ if search_pick:
 df["Prescriptions"] = df["prescriptions"]
 
 def pubs_display(val):
-    if pd.isna(val) or float(val) == 0.0:
-        return "No Pubs in MPRINT"
+    # Show "No Pubs in MPRINT" if missing/zero; otherwise show comma-separated integer
     try:
+        if pd.isna(val) or float(val) == 0.0:
+            return "No Pubs in MPRINT"
         v = float(val)
-        return f"{int(v)}" if v.is_integer() else f"{v}"
+        return f"{int(round(v)):,}"
     except Exception:
         return str(val)
 
