@@ -22,45 +22,37 @@ def render_header_logo():
     if not LOGO_PATH.exists():
         return
 
+    import re
     svg = LOGO_PATH.read_text(encoding="utf-8")
-    # Remove XML prolog so it doesn't render as text
+
+    # Remove XML header
     svg = re.sub(r'^\s*<\?xml[^>]*\?>', '', svg).strip()
 
-    # Force the root <svg> to be responsive and not use any hard width/height
-    # - add preserveAspectRatio so it fits the box nicely
-    # - add inline style that makes it scale to wrapper width
-    svg = re.sub(
-        r'<svg\b',
-        '<svg preserveAspectRatio="xMinYMin meet" style="width:100%;height:auto;display:block;"',
-        svg,
-        count=1
-    )
-    # Strip any inline width/height attributes if present
-    svg = re.sub(r'\s(width|height)="[^"]*"', '', svg)
+    # Ensure viewBox starts at 0,0 (prevents top clipping if negative offsets exist)
+    svg = re.sub(r'viewBox="[^"]+"', 'viewBox="0 0 1000 1000"', svg)
 
     html = f"""
 <style>
-/* Slight top padding so nothing feels cramped */
-.block-container {{ padding-top: 0.75rem; }}
-
-/* Ensure any nested svg inside our logo scales correctly */
-.rwe-logo svg {{ width: 100%; height: auto; display: block; }}
+  .block-container {{
+    padding-top: 1.5rem;  /* extra breathing room at top */
+  }}
+  .rwe-logo-wrap {{
+    width: clamp(240px, 33vw, 500px);
+    margin: 1rem 0;      
+    overflow: visible;   /* ensure nothing clips vertically */
+  }}
+  .rwe-logo-wrap svg {{
+    width: 100%;
+    height: auto;
+    display: block;
+  }}
 </style>
-
-<div class="rwe-logo"
-     style="
-        /* responsive width: min 200px, usually ~30% of viewport, max 420px */
-        width: clamp(200px, 30vw, 420px);
-        /* DO NOT CLIP — let the SVG extend if needed */
-        overflow: visible;
-        /* left aligned; space below the logo */
-        margin: 0 0 1rem 0;
-        text-align: left;
-     ">
+<div class="rwe-logo-wrap">
   {svg}
 </div>
 """
     st.markdown(html, unsafe_allow_html=True)
+
 
 # -----------------------
 # Repo-relative paths (no absolute paths)
