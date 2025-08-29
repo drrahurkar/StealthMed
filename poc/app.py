@@ -19,11 +19,20 @@ LOGO_PATH = DEFAULT_DIR / "logo.svg"
 
 def render_header_logo():
     if LOGO_PATH.exists():
-        svg_content = LOGO_PATH.read_text()
-        # scale to ~33% of screen width
-        st.components.v1.html(
-            f"<div style='width:33%; margin:left;'>{svg_content}</div>",
-            height=200,  # adjust if clipped
+        svg = LOGO_PATH.read_text()
+        st.markdown(
+            f"""
+            <style>
+              /* optional: add top padding for breathing room */
+              .block-container {{ padding-top: 1.2rem; }}
+              /* make any SVG inside our logo wrapper scale to container */
+              .rwe-logo svg {{ width: 100%; height: auto; }}
+            </style>
+            <div class="rwe-logo" style="width:33%; max-width:33vw; overflow:visible; text-align:left;">
+              {svg}
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
 # -----------------------
