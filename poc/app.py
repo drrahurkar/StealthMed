@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from datetime import datetime
+from lxml import etree # Recommended for safe XML parsing
 
 # -----------------------
 # Page config
@@ -16,31 +17,38 @@ st.set_page_config(page_title="Stealth Med RWEye", page_icon="💊", layout="wid
 DEFAULT_DIR = Path(__file__).parent
 LOGO_PATH = DEFAULT_DIR / "logo.svg"
 
-def render_header_logo():
+def render_header_logo_improved():
     if not LOGO_PATH.exists():
+        st.warning(f"Logo file not found at: {LOGO_PATH}")
         return
 
-    svg = LOGO_PATH.read_text(encoding="utf-8")
+    try:
+        parser = etree.XMLParser(remove_blank_text=True)
+        svg_tree = etree.parse(str(LOGO_PATH), parser)
+        root = svg_tree.getroot()
+        
+        # Safely set attributes
+        if 'viewBox' not in root.attrib:
+            root.set('viewBox', '0 0 1000 1000')
+        root.set('preserveAspectRatio', 'xMinYMin meet')
 
-    # (Optional) strip XML header & normalize viewBox to avoid internal clipping
-    svg = re.sub(r'^\s*<\?xml[^>]*\?>', '', svg).strip()
-    if 'viewBox="' not in svg:
-        # inject a sane viewBox if the file doesn't include one
-        svg = re.sub(r'<svg\b', '<svg viewBox="0 0 1000 1000"', svg, count=1)
-    # Keep aspect ratio anchored to top-left
-    svg = re.sub(r'<svg\b', '<svg preserveAspectRatio="xMinYMin meet"', svg, count=1)
+        svg_string = etree.tostring(svg_tree, pretty_print=True).decode('utf-8')
 
+    except Exception as e:
+        st.error(f"Error parsing or modifying SVG: {e}")
+        return
+
+    # Using a Streamlit component for a cleaner HTML injection
     st.markdown(f"""
     <style>
-      /* Keep page top neat, but don't add extra bottom gap */
       .block-container {{
-        padding-top: 0.6rem;  /* tiny top breathing room */
+        padding-top: 0.6rem;
       }}
       .rwe-logo-wrap {{
-        width: clamp(220px, 32vw, 520px); /* responsive width */
-        overflow: visible;                /* avoid cropping */
-        margin: 0 0 0.25rem 0;            /* very small bottom gap */
-        transform: translateY(6px);       /* nudge down WITHOUT affecting flow */
+        width: clamp(220px, 32vw, 520px);
+        overflow: visible;
+        margin: 0 0 0.25rem 0;
+        transform: translateY(6px);
       }}
       .rwe-logo-wrap svg {{
         width: 100%;
@@ -49,7 +57,7 @@ def render_header_logo():
       }}
     </style>
     <div class="rwe-logo-wrap">
-      {svg}
+      {svg_string}
     </div>
     """, unsafe_allow_html=True)
 
