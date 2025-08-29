@@ -23,17 +23,22 @@ def render_header_logo():
         st.markdown(
             f"""
             <style>
-              /* optional: add top padding for breathing room */
-              .block-container {{ padding-top: 1.2rem; }}
-              /* make any SVG inside our logo wrapper scale to container */
+              /* tweak top padding if needed */
+              .block-container {{ padding-top: 1rem; }}
+              /* make SVG scale to its wrapper */
               .rwe-logo svg {{ width: 100%; height: auto; }}
             </style>
-            <div class="rwe-logo" style="width:33%; max-width:33vw; overflow:visible; text-align:left;">
+            <!-- clamp(min, preferred, max): scales nicely on all screens -->
+            <div class="rwe-logo" 
+                 style="width: clamp(180px, 33vw, 360px); 
+                        overflow: visible; 
+                        text-align: left;">
               {svg}
             </div>
             """,
             unsafe_allow_html=True
         )
+
 
 # -----------------------
 # Repo-relative paths (no absolute paths)
