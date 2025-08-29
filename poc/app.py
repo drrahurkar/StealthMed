@@ -1,5 +1,6 @@
 # app.py — cloud-safe header: paths, logo, loaders, file resolution
 import os
+import re
 from pathlib import Path
 import numpy as np
 import pandas as pd
