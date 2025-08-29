@@ -18,47 +18,14 @@ DEFAULT_DIR = Path(__file__).parent
 LOGO_PATH = DEFAULT_DIR / "logo.svg"
 
 
-def render_header_logo(
-    path: Path = LOGO_PATH,
-    width_px: int = 360,          # desired width in pixels
-    top_px: int = 8,              # top margin
-    bottom_px: int = 10           # bottom margin before next section
-):
-    if not path or not Path(path).exists():
-        return
-
-    svg = Path(path).read_text(encoding="utf-8").strip()
-
-    # 1) remove XML prolog if present (prevents stray text from showing)
-    svg = re.sub(r'^\s*<\?xml[^>]*\?>', '', svg).strip()
-
-    # 2) ensure viewBox exists (fallback if missing)
-    if 'viewBox=' not in svg:
-        svg = svg.replace('<svg', '<svg viewBox="0 0 1000 1000"', 1)
-
-    # 3) force preserveAspectRatio for “fit from top-left”
-    if 'preserveAspectRatio=' not in svg:
-        svg = svg.replace('<svg', '<svg preserveAspectRatio="xMinYMin meet"', 1)
-
-    # 4) compute height from viewBox so the iframe is tall enough (no clipping)
-    m = re.search(r'viewBox="\s*0\s+0\s+([\d.]+)\s+([\d.]+)"', svg)
-    if m:
-        vb_w, vb_h = float(m.group(1)), float(m.group(2))
-        aspect = vb_h / vb_w if vb_w else 0.5
-    else:
-        aspect = 0.5  # fallback aspect if no viewBox parse
-
-    height_px = int(width_px * aspect) + top_px + bottom_px
-
-    # 5) embed via components.html (keeps HTML unescaped)
-    html = f"""
-    <div style="margin:{top_px}px 0 {bottom_px}px 0; text-align:left;">
-      <div style="width:{width_px}px; line-height:0; overflow:visible; display:inline-block;">
-        {svg}
-      </div>
-    </div>
-    """
-    st.components.v1.html(html, height=height_px)
+def render_header_logo():
+    if LOGO_PATH.exists():
+        svg_content = LOGO_PATH.read_text()
+        # scale to ~33% of screen width
+        st.components.v1.html(
+            f"<div style='width:33%; margin:left;'>{svg_content}</div>",
+            height=200,  # adjust if clipped
+        )
 
 
 # -----------------------
