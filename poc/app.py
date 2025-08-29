@@ -16,40 +16,42 @@ st.set_page_config(page_title="Stealth Med RWEye", page_icon="💊", layout="wid
 DEFAULT_DIR = Path(__file__).parent
 LOGO_PATH = DEFAULT_DIR / "logo.svg"
 
-def render_header_logo():
+ef render_header_logo():
     if not LOGO_PATH.exists():
         return
 
-    import re
     svg = LOGO_PATH.read_text(encoding="utf-8")
 
-    # Remove XML header
+    # (Optional) strip XML header & normalize viewBox to avoid internal clipping
     svg = re.sub(r'^\s*<\?xml[^>]*\?>', '', svg).strip()
+    if 'viewBox="' not in svg:
+        # inject a sane viewBox if the file doesn't include one
+        svg = re.sub(r'<svg\b', '<svg viewBox="0 0 1000 1000"', svg, count=1)
+    # Keep aspect ratio anchored to top-left
+    svg = re.sub(r'<svg\b', '<svg preserveAspectRatio="xMinYMin meet"', svg, count=1)
 
-    # Ensure viewBox starts at 0,0 (prevents top clipping if negative offsets exist)
-    svg = re.sub(r'viewBox="[^"]+"', 'viewBox="0 0 1000 1000"', svg)
-
-    html = f"""
-<style>
-  .block-container {{
-    padding-top: 1.5rem;  /* extra breathing room at top */
-  }}
-  .rwe-logo-wrap {{
-    width: clamp(240px, 33vw, 500px);
-    margin: 1rem 0;      
-    overflow: visible;   /* ensure nothing clips vertically */
-  }}
-  .rwe-logo-wrap svg {{
-    width: 100%;
-    height: auto;
-    display: block;
-  }}
-</style>
-<div class="rwe-logo-wrap">
-  {svg}
-</div>
-"""
-    st.markdown(html, unsafe_allow_html=True)
+    st.markdown(f"""
+    <style>
+      /* Keep page top neat, but don't add extra bottom gap */
+      .block-container {{
+        padding-top: 0.6rem;  /* tiny top breathing room */
+      }}
+      .rwe-logo-wrap {{
+        width: clamp(220px, 32vw, 520px); /* responsive width */
+        overflow: visible;                /* avoid cropping */
+        margin: 0 0 0.25rem 0;            /* very small bottom gap */
+        transform: translateY(6px);       /* nudge down WITHOUT affecting flow */
+      }}
+      .rwe-logo-wrap svg {{
+        width: 100%;
+        height: auto;
+        display: block;
+      }}
+    </style>
+    <div class="rwe-logo-wrap">
+      {svg}
+    </div>
+    """, unsafe_allow_html=True)
 
 
 # -----------------------
