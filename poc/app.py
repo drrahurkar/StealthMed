@@ -17,49 +17,48 @@ st.set_page_config(page_title="Stealth Med RWEye", page_icon="💊", layout="wid
 DEFAULT_DIR = Path(__file__).parent
 LOGO_PATH = DEFAULT_DIR / "logo.svg"
 
-def render_header_logo_improved():
-    if not LOGO_PATH.exists():
-        st.warning(f"Logo file not found at: {LOGO_PATH}")
+
+def render_header_logo(
+    path: Path = LOGO_PATH,
+    width_px: int = 360,          # desired width in pixels
+    top_px: int = 8,              # top margin
+    bottom_px: int = 10           # bottom margin before next section
+):
+    if not path or not Path(path).exists():
         return
 
-    try:
-        parser = etree.XMLParser(remove_blank_text=True)
-        svg_tree = etree.parse(str(LOGO_PATH), parser)
-        root = svg_tree.getroot()
-        
-        # Safely set attributes
-        if 'viewBox' not in root.attrib:
-            root.set('viewBox', '0 0 1000 1000')
-        root.set('preserveAspectRatio', 'xMinYMin meet')
+    svg = Path(path).read_text(encoding="utf-8").strip()
 
-        svg_string = etree.tostring(svg_tree, pretty_print=True).decode('utf-8')
+    # 1) remove XML prolog if present (prevents stray text from showing)
+    svg = re.sub(r'^\s*<\?xml[^>]*\?>', '', svg).strip()
 
-    except Exception as e:
-        st.error(f"Error parsing or modifying SVG: {e}")
-        return
+    # 2) ensure viewBox exists (fallback if missing)
+    if 'viewBox=' not in svg:
+        svg = svg.replace('<svg', '<svg viewBox="0 0 1000 1000"', 1)
 
-    # Using a Streamlit component for a cleaner HTML injection
-    st.markdown(f"""
-    <style>
-      .block-container {{
-        padding-top: 0.6rem;
-      }}
-      .rwe-logo-wrap {{
-        width: clamp(220px, 32vw, 520px);
-        overflow: visible;
-        margin: 0 0 0.25rem 0;
-        transform: translateY(6px);
-      }}
-      .rwe-logo-wrap svg {{
-        width: 100%;
-        height: auto;
-        display: block;
-      }}
-    </style>
-    <div class="rwe-logo-wrap">
-      {svg_string}
+    # 3) force preserveAspectRatio for “fit from top-left”
+    if 'preserveAspectRatio=' not in svg:
+        svg = svg.replace('<svg', '<svg preserveAspectRatio="xMinYMin meet"', 1)
+
+    # 4) compute height from viewBox so the iframe is tall enough (no clipping)
+    m = re.search(r'viewBox="\s*0\s+0\s+([\d.]+)\s+([\d.]+)"', svg)
+    if m:
+        vb_w, vb_h = float(m.group(1)), float(m.group(2))
+        aspect = vb_h / vb_w if vb_w else 0.5
+    else:
+        aspect = 0.5  # fallback aspect if no viewBox parse
+
+    height_px = int(width_px * aspect) + top_px + bottom_px
+
+    # 5) embed via components.html (keeps HTML unescaped)
+    html = f"""
+    <div style="margin:{top_px}px 0 {bottom_px}px 0; text-align:left;">
+      <div style="width:{width_px}px; line-height:0; overflow:visible; display:inline-block;">
+        {svg}
+      </div>
     </div>
-    """, unsafe_allow_html=True)
+    """
+    st.components.v1.html(html, height=height_px)
 
 
 # -----------------------
