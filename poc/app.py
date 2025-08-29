@@ -22,27 +22,45 @@ def render_header_logo():
     if not LOGO_PATH.exists():
         return
 
-    svg = LOGO_PATH.read_text()
-
-    # Remove XML prolog if present (prevents odd text output)
+    svg = LOGO_PATH.read_text(encoding="utf-8")
+    # Remove XML prolog so it doesn't render as text
     svg = re.sub(r'^\s*<\?xml[^>]*\?>', '', svg).strip()
 
-    # Build HTML/CSS with NO leading indentation (important: avoids code block)
-    html = f"""<style>
-.rwe-logo svg {{ width: 100%; height: auto; display: block; }}
-/* Optional: reduce top padding so logo isn’t clipped */
+    # Force the root <svg> to be responsive and not use any hard width/height
+    # - add preserveAspectRatio so it fits the box nicely
+    # - add inline style that makes it scale to wrapper width
+    svg = re.sub(
+        r'<svg\b',
+        '<svg preserveAspectRatio="xMinYMin meet" style="width:100%;height:auto;display:block;"',
+        svg,
+        count=1
+    )
+    # Strip any inline width/height attributes if present
+    svg = re.sub(r'\s(width|height)="[^"]*"', '', svg)
+
+    html = f"""
+<style>
+/* Slight top padding so nothing feels cramped */
 .block-container {{ padding-top: 0.75rem; }}
+
+/* Ensure any nested svg inside our logo scales correctly */
+.rwe-logo svg {{ width: 100%; height: auto; display: block; }}
 </style>
+
 <div class="rwe-logo"
-     style="width: clamp(180px, 33vw, 360px);  /* min 180px, prefer 33% vw, max 360px */
-            margin: 0 0 1rem 0; 
-            overflow: visible; 
-            text-align: left;">
-{svg}
-</div>"""
-
+     style="
+        /* responsive width: min 200px, usually ~30% of viewport, max 420px */
+        width: clamp(200px, 30vw, 420px);
+        /* DO NOT CLIP — let the SVG extend if needed */
+        overflow: visible;
+        /* left aligned; space below the logo */
+        margin: 0 0 1rem 0;
+        text-align: left;
+     ">
+  {svg}
+</div>
+"""
     st.markdown(html, unsafe_allow_html=True)
-
 
 # -----------------------
 # Repo-relative paths (no absolute paths)
