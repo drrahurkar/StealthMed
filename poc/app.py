@@ -17,17 +17,34 @@ st.set_page_config(page_title="Stealth Med RWEye", page_icon="💊", layout="wid
 DEFAULT_DIR = Path(__file__).parent
 LOGO_PATH = DEFAULT_DIR / "logo.svg"
 
+def render_header_logo(width_px: int = 340, top_pad_px: int = 6):
+    """
+    Render the SVG logo at a fixed pixel width.
+    - width_px: exact width in pixels (no viewport scaling)
+    - top_pad_px: small padding so it never looks clipped
+    """
+    if not LOGO_PATH.exists():
+        return
 
-def render_header_logo():
-    if LOGO_PATH.exists():
-        svg_content = LOGO_PATH.read_text()
-        # scale to ~33% of screen width
-        st.components.v1.html(
-            f"<div style='width:33%; height:33%; margin:left;'>{svg_content}</div>",
-            height=200,  # adjust if clipped
-        )
+    svg = LOGO_PATH.read_text(encoding="utf-8").strip()
+    # Strip XML declaration if present so it doesn't show up as text in some browsers
+    svg = re.sub(r'^\s*<\?xml[^>]+\?>', '', svg)
 
-
+    html = f"""
+<div id="rwe-logo" style="padding:{top_pad_px}px 0 10px 0; line-height:0;">
+  <style>
+    #rwe-logo svg {{
+      width: {width_px}px;   /* FIXED width */
+      height: auto;          /* keep aspect ratio */
+      display: block;
+      overflow: visible;     /* avoid internal clipping */
+    }}
+  </style>
+  {svg}
+</div>
+"""
+    # Height can be a bit larger than the logo’s visual height to avoid accidental clipping.
+    st.components.v1.html(html, height=width_px, scrolling=False)
 # -----------------------
 # Repo-relative paths (no absolute paths)
 # -----------------------
