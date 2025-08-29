@@ -18,26 +18,29 @@ DEFAULT_DIR = Path(__file__).parent
 LOGO_PATH = DEFAULT_DIR / "logo.svg"
 
 def render_header_logo():
-    if LOGO_PATH.exists():
-        svg = LOGO_PATH.read_text()
-        st.markdown(
-            f"""
-            <style>
-              /* tweak top padding if needed */
-              .block-container {{ padding-top: 1rem; }}
-              /* make SVG scale to its wrapper */
-              .rwe-logo svg {{ width: 100%; height: auto; }}
-            </style>
-            <!-- clamp(min, preferred, max): scales nicely on all screens -->
-            <div class="rwe-logo" 
-                 style="width: clamp(180px, 33vw, 360px); 
-                        overflow: visible; 
-                        text-align: left;">
-              {svg}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+    if not LOGO_PATH.exists():
+        return
+
+    svg = LOGO_PATH.read_text()
+
+    # Remove XML prolog if present (prevents odd text output)
+    svg = re.sub(r'^\s*<\?xml[^>]*\?>', '', svg).strip()
+
+    # Build HTML/CSS with NO leading indentation (important: avoids code block)
+    html = f"""<style>
+.rwe-logo svg {{ width: 100%; height: auto; display: block; }}
+/* Optional: reduce top padding so logo isn’t clipped */
+.block-container {{ padding-top: 0.75rem; }}
+</style>
+<div class="rwe-logo"
+     style="width: clamp(180px, 33vw, 360px);  /* min 180px, prefer 33% vw, max 360px */
+            margin: 0 0 1rem 0; 
+            overflow: visible; 
+            text-align: left;">
+{svg}
+</div>"""
+
+    st.markdown(html, unsafe_allow_html=True)
 
 
 # -----------------------
