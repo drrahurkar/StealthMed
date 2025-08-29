@@ -16,7 +16,7 @@ st.set_page_config(page_title="Stealth Med RWEye", page_icon="💊", layout="wid
 DEFAULT_DIR = Path(__file__).parent
 LOGO_PATH = DEFAULT_DIR / "logo.svg"
 
-ef render_header_logo():
+def render_header_logo():
     if not LOGO_PATH.exists():
         return
 
